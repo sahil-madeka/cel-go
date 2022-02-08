@@ -22,6 +22,8 @@ import (
 	"github.com/google/cel-go/common/types/pb"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/common/types/traits"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -29,6 +31,7 @@ import (
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	dpb "google.golang.org/protobuf/types/known/durationpb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	rpcpb "google.golang.org/genproto/googleapis/rpc/status"
 	tpb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -454,7 +457,7 @@ func RefValueToExprValue(res ref.Val, err error) (*exprpb.ExprValue, error) {
 			},
 		}, nil
 	}
-	if types.IsUnknown(res) {
+	if IsUnknown(res) {
 		return &exprpb.ExprValue{
 			Kind: &exprpb.ExprValue_Unknown{
 				Unknown: &exprpb.UnknownSet{
@@ -474,23 +477,23 @@ func RefValueToExprValue(res ref.Val, err error) (*exprpb.ExprValue, error) {
 // The ref.Val must not be error or unknown.
 func RefValueToValue(res ref.Val) (*exprpb.Value, error) {
 	switch res.Type() {
-	case types.BoolType:
+	case BoolType:
 		return &exprpb.Value{
 			Kind: &exprpb.Value_BoolValue{BoolValue: res.Value().(bool)}}, nil
-	case types.BytesType:
+	case BytesType:
 		return &exprpb.Value{
 			Kind: &exprpb.Value_BytesValue{BytesValue: res.Value().([]byte)}}, nil
-	case types.DoubleType:
+	case DoubleType:
 		return &exprpb.Value{
 			Kind: &exprpb.Value_DoubleValue{DoubleValue: res.Value().(float64)}}, nil
-	case types.IntType:
+	case IntType:
 		return &exprpb.Value{
 			Kind: &exprpb.Value_Int64Value{Int64Value: res.Value().(int64)}}, nil
-	case types.ListType:
+	case ListType:
 		l := res.(traits.Lister)
-		sz := l.Size().(types.Int)
+		sz := l.Size().(Int)
 		elts := make([]*exprpb.Value, 0, int64(sz))
-		for i := types.Int(0); i < sz; i++ {
+		for i := Int(0); i < sz; i++ {
 			v, err := RefValueToValue(l.Get(i))
 			if err != nil {
 				return nil, err
@@ -500,11 +503,11 @@ func RefValueToValue(res ref.Val) (*exprpb.Value, error) {
 		return &exprpb.Value{
 			Kind: &exprpb.Value_ListValue{
 				ListValue: &exprpb.ListValue{Values: elts}}}, nil
-	case types.MapType:
+	case MapType:
 		mapper := res.(traits.Mapper)
-		sz := mapper.Size().(types.Int)
+		sz := mapper.Size().(Int)
 		entries := make([]*exprpb.MapValue_Entry, 0, int64(sz))
-		for it := mapper.Iterator(); it.HasNext().(types.Bool); {
+		for it := mapper.Iterator(); it.HasNext().(Bool); {
 			k := it.Next()
 			v := mapper.Get(k)
 			kv, err := RefValueToValue(k)
@@ -520,19 +523,19 @@ func RefValueToValue(res ref.Val) (*exprpb.Value, error) {
 		return &exprpb.Value{
 			Kind: &exprpb.Value_MapValue{
 				MapValue: &exprpb.MapValue{Entries: entries}}}, nil
-	case types.NullType:
+	case NullType:
 		return &exprpb.Value{
 			Kind: &exprpb.Value_NullValue{}}, nil
-	case types.StringType:
+	case StringType:
 		return &exprpb.Value{
 			Kind: &exprpb.Value_StringValue{StringValue: res.Value().(string)}}, nil
-	case types.TypeType:
+	case TypeType:
 		typeName := res.(ref.Type).TypeName()
 		return &exprpb.Value{Kind: &exprpb.Value_TypeValue{TypeValue: typeName}}, nil
-	case types.UintType:
+	case UintType:
 		return &exprpb.Value{
 			Kind: &exprpb.Value_Uint64Value{Uint64Value: res.Value().(uint64)}}, nil
-	case types.DurationType:
+	case DurationType:
 		d, ok := res.Value().(time.Duration)
 		if !ok {
 			return nil, status.New(codes.InvalidArgument, "Expected time.Duration").Err()
@@ -543,7 +546,7 @@ func RefValueToValue(res ref.Val) (*exprpb.Value, error) {
 		}
 		return &exprpb.Value{
 			Kind: &exprpb.Value_ObjectValue{ObjectValue: any}}, nil
-	case types.TimestampType:
+	case TimestampType:
 		t, ok := res.Value().(time.Time)
 		if !ok {
 			return nil, status.New(codes.InvalidArgument, "Expected time.Time").Err()

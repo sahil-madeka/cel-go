@@ -18,13 +18,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
-	"github.com/google/cel-go/common/types/traits"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -35,8 +33,6 @@ import (
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	rpcpb "google.golang.org/genproto/googleapis/rpc/status"
 	anypb "google.golang.org/protobuf/types/known/anypb"
-	dpb "google.golang.org/protobuf/types/known/durationpb"
-	tpb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ConformanceServer contains the server state.
